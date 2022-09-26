@@ -79,8 +79,9 @@ class Updater(Repo):
         """Run application"""
         subprocess.run(self._get_command_in_venv(self.COMMAND_RUN_APP), shell=True)
 
-    def _get_command_in_venv(self, command: Optional[str] = None) -> str:
+    def _get_command_in_venv(self, command: str) -> str:
         """Returns the command to be executed in the virtual environment.
+
         :param command:
             The command to be executed in the virtual environment.
         :return:
