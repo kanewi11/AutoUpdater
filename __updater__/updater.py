@@ -1,15 +1,37 @@
 import os.path
+import subprocess
 from pathlib import Path
 from typing import Optional, Any
 
 from git import Repo
 
-
 from __updater__.exc import MissingKeywordArguments
+
+from __updater__.settings import APP, PYTHON, ENVIRONMENT_NAME, PIP
 
 
 class Updater(Repo):
+    """The class is inherited from the Repo class of the GitPython library.
+
+    This class may:
+        - Install requirements
+        - Close your application
+        - Run your app
+        - Make a Pull from the GitHub repository
+        - Add this package to .gitignore
+    """
     BASE_DIR = Path(__file__).resolve().parent.parent
+
+    PATH_TO_VENV_ACTIVATE = BASE_DIR.joinpath(f'{ENVIRONMENT_NAME}/bin/activate')
+    COMMAND_ACTIVATE_VENV = f'source {PATH_TO_VENV_ACTIVATE}'
+
+    PATH_TO_REQUIREMENTS_FILE = BASE_DIR.joinpath('requirements.txt')
+    COMMAND_INSTALL_REQUIREMENTS = f'{PIP} install -r {PATH_TO_REQUIREMENTS_FILE}'
+
+    PATH_TO_APP = BASE_DIR.joinpath(APP)
+    COMMAND_RUN_APP = f'{PYTHON} {PATH_TO_APP}'
+
+    COMMAND_KILL_APP = f'pkill -f {APP}'
 
     def __init__(self, owner: Optional[str] = None, repository_name: Optional[str] = None, **kwargs: Any) -> None:
         """Create a new Updater instance.
@@ -42,26 +64,39 @@ class Updater(Repo):
     def update(self) -> None:
         """Doing a pull and add '__updater__/' in .gitignore file"""
         self.git.pull(self.git_url)
-        self._add_updater_in_gitignore()
-        self._install_requirements()
 
-    def _install_requirements(self):
+    def install_requirements(self) -> None:
         """Install requirements.txt"""
-        if not os.path.exists(self.BASE_DIR.joinpath('requirements.txt')):
+        if not os.path.exists(self.PATH_TO_REQUIREMENTS_FILE):
             return
 
-    def _restart_app(self) -> None:
-        """Restart application"""
-        ...
+        subprocess.run(self._get_command_in_venv(self.COMMAND_INSTALL_REQUIREMENTS), shell=True)
 
-    def _add_updater_in_gitignore(self) -> None:
+    def kill_application(self) -> None:
+        """Kill application"""
+        subprocess.run(self.COMMAND_KILL_APP, shell=True)
+
+    def run_application(self) -> None:
+        """Run application"""
+        subprocess.run(self._get_command_in_venv(self.COMMAND_RUN_APP), shell=True)
+
+    def _get_command_in_venv(self, command: Optional[str] = None) -> str:
+        """Returns the command to be executed in the virtual environment.
+        :param command:
+            The command to be executed in the virtual environment.
+        :return:
+            The command with the execution of the virtual environment
+            activation and the command that was passed to this method."""
+        return ';'.join([self.COMMAND_ACTIVATE_VENV, command])
+
+    def add_updater_in_gitignore(self) -> None:
         """Reading in 'a+' may not work adequately, which is why I used two context managers."""
 
         gitignore_path = self.BASE_DIR.joinpath('.gitignore')
         dir_name = Path(__file__).resolve().parent.name
 
         with open(gitignore_path, 'r') as gitignore_file:
-            if f'{dir_name}/' in gitignore_file.read():  # If the file already contains a '__updater__/', then exit
+            if f'{dir_name}/' in gitignore_file.read():  # If the file already contains a '__updater__/', then return
                 return
 
         with open(gitignore_path, 'a') as gitignore_file:
