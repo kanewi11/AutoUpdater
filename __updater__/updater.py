@@ -6,7 +6,6 @@ from typing import Optional, Any
 from git import Repo
 
 from __updater__.exc import MissingKeywordArguments
-
 from __updater__.settings import APP, PYTHON, ENVIRONMENT_NAME, PIP
 
 
@@ -18,8 +17,8 @@ class Updater(Repo):
         - Close your application
         - Run your app
         - Make a Pull from the GitHub repository
-        - Add this package to .gitignore
-    """
+        - Add this package to .gitignore"""
+
     BASE_DIR = Path(__file__).resolve().parent.parent
 
     PATH_TO_VENV_ACTIVATE = BASE_DIR.joinpath(f'{ENVIRONMENT_NAME}/bin/activate')
