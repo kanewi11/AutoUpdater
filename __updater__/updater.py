@@ -61,7 +61,7 @@ class Updater(Repo):
         self.git_url = f'https://github.com/{owner}/{repository_name}.git'
 
     def update(self) -> None:
-        """Doing a pull and add '__updater__/' in .gitignore file"""
+        """Doing a pull"""
         self.git.pull(self.git_url)
 
     def install_requirements(self) -> None:

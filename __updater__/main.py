@@ -9,7 +9,7 @@ def main():
     updater.add_updater_in_gitignore()
     updater.install_requirements()
     updater.run_application()
-
+    updater.update()
 
 if __name__ == '__main__':
     main()
