@@ -1,18 +1,18 @@
 import os.path
 import subprocess
 from pathlib import Path
-from typing import Optional, Any
+from typing import Any
 
 from git import Repo
 
-from __updater__.exc import MissingKeywordArguments
-from __updater__.settings import APP, PYTHON, ENVIRONMENT_NAME, PIP
+from __updater__.settings import APP, PYTHON, ENVIRONMENT_NAME, PIP, REMOTE_BRANCH_NAME, OWNER, REPOSITORY_NAME
 
 
 class Updater(Repo):
     """The class is inherited from the Repo class of the GitPython library.
 
     This class may:
+        - Auto init git repository
         - Install requirements
         - Close your application
         - Run your app
@@ -28,69 +28,80 @@ class Updater(Repo):
     COMMAND_INSTALL_REQUIREMENTS = f'{PIP} install -r {PATH_TO_REQUIREMENTS_FILE}'
 
     PATH_TO_APP = BASE_DIR.joinpath(APP)
-    COMMAND_RUN_APP = f'{PYTHON} {PATH_TO_APP}'
+    COMMAND_RUN_APP = f'nohup {PYTHON} {PATH_TO_APP} &'
 
     COMMAND_KILL_APP = f'pkill -f {APP}'
 
-    def __init__(self, owner: Optional[str] = None, repository_name: Optional[str] = None, **kwargs: Any) -> None:
+    owner = OWNER
+    repository_name = REPOSITORY_NAME
+
+    def __init__(self, **kwargs: Any) -> None:
         """Create a new Updater instance.
 
-        :param owner:
-            GitHub repository owner -> https://github.com/kanewi11
-            owner = 'kanewi11'.
-
-        :param repository_name:
-            GitHub repository name -> https://github.com/kanewi11/MoviePlanet
-            repository_name = 'MoviePlanet'.
-
         :param kwargs:
-            - If git is not initialized, you can pass the keyword arguments
-            of the magic init(...) method of the Repo class here.
-            - If git is initialized, you can pass the keyword arguments
-            of the __init__(...) magic method of the Repo class here. """
+            Keyword arguments serving as additional options to the git-init command"""
 
         if not os.path.exists(self.BASE_DIR.joinpath('.git')):
-            self.init(path=self.BASE_DIR, **kwargs)
-        elif owner is None or repository_name is None:
-            raise MissingKeywordArguments
+            Repo.init(path=self.BASE_DIR, **kwargs)
 
-        super().__init__(path=self.BASE_DIR, **kwargs)
+        super().__init__(path=self.BASE_DIR)
 
-        self.owner = owner
-        self.repository_name = repository_name
-        self.git_url = f'https://github.com/{owner}/{repository_name}.git'
+        self.url = f'https://github.com/{self.owner}/{self.repository_name}.git'
 
-    def update(self) -> None:
-        """Doing a pull"""
-        self.git.pull(self.git_url)
+        if not self.remotes:
+            self.create_remote(REMOTE_BRANCH_NAME, self.url)
+
+    def update(self, **kwargs: Any) -> None:
+        """ Doing hard reset and pull
+        :param kwargs:
+            Additional arguments to be passed to git-pull"""
+
+        self.git.reset('--hard')
+        self.git.pull(self.url, **kwargs)
+
+    def check_update(self) -> bool:
+        """ Checking local commit and remote commit """
+        try:
+            local_last_commit = self.commit().hexsha
+        except ValueError:
+            return False
+
+        remote = self.remotes[0]
+        remote_last_commit = remote.fetch()[0].commit.hexsha
+        return remote_last_commit == local_last_commit
+
+    def restart_app(self):
+        """ Restarting application """
+        self.kill_application()
+        self.run_application()
 
     def install_requirements(self) -> None:
-        """Install requirements.txt"""
+        """ Install requirements.txt """
         if not os.path.exists(self.PATH_TO_REQUIREMENTS_FILE):
             return
 
         subprocess.run(self._get_command_in_venv(self.COMMAND_INSTALL_REQUIREMENTS), shell=True)
 
     def kill_application(self) -> None:
-        """Kill application"""
+        """ Kill application """
         subprocess.run(self.COMMAND_KILL_APP, shell=True)
 
     def run_application(self) -> None:
-        """Run application"""
-        subprocess.run(self._get_command_in_venv(self.COMMAND_RUN_APP), shell=True)
+        """ Run application """
+        subprocess.call(self._get_command_in_venv(self.COMMAND_RUN_APP), shell=True)
 
     def _get_command_in_venv(self, command: str) -> str:
-        """Returns the command to be executed in the virtual environment.
-
+        """Returns the command to be executed in the virtual environment
         :param command:
-            The command to be executed in the virtual environment.
+            The command to be executed in the virtual environment
+
         :return:
             The command with the execution of the virtual environment
-            activation and the command that was passed to this method."""
+            activation and the command that was passed to this method"""
         return ';'.join([self.COMMAND_ACTIVATE_VENV, command])
 
     def add_updater_in_gitignore(self) -> None:
-        """Reading in 'a+' may not work adequately, which is why I used two context managers."""
+        """ Reading in 'a+' may not work adequately, which is why I used two context managers """
 
         gitignore_path = self.BASE_DIR.joinpath('.gitignore')
         dir_name = Path(__file__).resolve().parent.name
