@@ -26,10 +26,10 @@ updater = Updater(owner=OWNER, repository_name=REPOSITORY_NAME, app_name=APP, en
 
 def main():
     """ Example of a function to check for an update and install that update, if there is one. """
-    sleep(UPDATE_DELAY)
 
     update = updater.check_update()
     if not update:
+        sleep(UPDATE_DELAY)
         return
 
     updater.kill_application()
@@ -45,3 +45,4 @@ if __name__ == '__main__':
             main()
         except Exception as error:
             logging.error(traceback.format_exc())
+            break
