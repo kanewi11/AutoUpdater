@@ -12,7 +12,7 @@ Once started, `__updater__/main.py` will automatically create a git repository a
 
 1. Create an empty directory
 2. Clone the repository first `git clone https://github.com/kanewi11/AutoUpdater.git ./`
-3. Creating a virtual environment `python -m venv venv`
+3. Creating a virtual environment `python3 -m venv venv`
 4. Activating the virtual environment `source venv/bin/activate` 
 5. Set the requirements `pip install -r requirements.txt`
 6. Then navigate to the file ➡️ `__updater__/settings.py`
