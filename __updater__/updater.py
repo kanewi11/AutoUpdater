@@ -42,6 +42,14 @@ class Updater(Repo):
         :param kwargs:
             Keyword arguments serving as additional options to the git-init command"""
 
+        self.owner = owner
+        self.repository_name = repository_name
+        self.url = f'https://github.com/{self.owner}/{self.repository_name}.git'
+
+        repo_url = Repo(path=self.BASE_DIR).remotes[0].url
+        if repo_url != self.url:
+            self._delete_git()
+
         if not os.path.exists(self.BASE_DIR.joinpath('.git')):
             Repo.init(path=self.BASE_DIR, **kwargs)
 
@@ -58,12 +66,9 @@ class Updater(Repo):
 
         self.command_kill_app = f'pkill -f {app_name}'
 
-        self.owner = owner
-        self.repository_name = repository_name
-
         self.DESIRED_DIRECTORIES.append(environment_name)
 
-        self.url = f'https://github.com/{self.owner}/{self.repository_name}.git'
+        self.kwargs = kwargs
 
         if not self.remotes:
             self.create_remote(branch_name, self.url)
@@ -143,6 +148,12 @@ class Updater(Repo):
                 shutil.rmtree(file)
                 continue
             Path.unlink(file)
+
+    def _delete_git(self) -> None:
+        """Deleting a git dir"""
+        path_to_git = self.BASE_DIR.joinpath('.git')
+        if Path.exists(path_to_git):
+            shutil.rmtree(path_to_git)
 
     def __check_error(self, error: Exception) -> Union[bool, None]:
         """ Checking whether the error is safe, if so handling it, if not causing it
