@@ -15,7 +15,7 @@ so think ahead and make sure that all the parameters
 that need to be changed in production are put in the environment variables.
 
 1. Create an empty directory
-2. Clone the repository first `git clone https://github.com/kanewi11/AutoUpdater.git ./`
+2. Clone the repository `git clone https://github.com/kanewi11/AutoUpdater.git ./`
 3. Creating a virtual environment `python3 -m venv venv`
 4. Activating the virtual environment `source venv/bin/activate` 
 5. Set the requirements `pip install -r requirements.txt`
