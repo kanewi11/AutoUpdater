@@ -63,18 +63,12 @@ class Updater(Repo):
 
         self.path_to_venv_activate = self.BASE_DIR.joinpath(f'{environment_name}/bin/activate')
         self.command_activate_venv = f'source {self.path_to_venv_activate}'
-
         self.path_to_requirements_file = self.BASE_DIR.joinpath('requirements.txt')
         self.command_install_requirements = f'{pip} install -r {self.path_to_requirements_file}'
-
         self.path_to_app = self.BASE_DIR.joinpath(app_name)
         self.command_run_app = f'nohup {python} {self.path_to_app} &'
-
         self.command_kill_app = f'pkill -f {app_name}'
-
         self.DESIRED_DIRECTORIES.append(environment_name)
-
-        self.kwargs = kwargs
 
         if not self.remotes:
             self.create_remote(branch_name, self.url)
