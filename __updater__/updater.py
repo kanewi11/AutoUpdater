@@ -2,9 +2,10 @@ import os.path
 import shutil
 import subprocess
 from pathlib import Path
-from typing import Any, Union
+from typing import Any, Union, Optional
 
-from git import Repo
+from git import Repo, FetchInfo
+from git.util import IterableList
 from git.exc import GitCommandError
 
 
@@ -17,10 +18,15 @@ class Updater(Repo):
         - Close your application
         - Run your app
         - Make a Pull from the GitHub repository
-        - Add this package to .gitignore"""
+        - Add this package to .gitignore
+
+    Before each update, all your local changes will be overwritten,
+    so think ahead and make sure that all the parameters
+    that need to be changed in production are put in the environment variables."""
 
     BASE_DIR = Path(__file__).resolve().parent.parent
     DESIRED_DIRECTORIES = [Path(__file__).resolve().parent.name, '.git']
+    PATH_TO_GIT = BASE_DIR.joinpath('.git')
 
     def __init__(self, owner: str, repository_name: str, app_name: str, environment_name: str = 'venv',
                  branch_name: str = 'main', pip: str = 'pip',  python: str = 'python', **kwargs: Any) -> None:
@@ -50,7 +56,7 @@ class Updater(Repo):
         if repo_url != self.url:
             self._delete_git()
 
-        if not os.path.exists(self.BASE_DIR.joinpath('.git')):
+        if not os.path.exists(self.PATH_TO_GIT):
             Repo.init(path=self.BASE_DIR, **kwargs)
 
         super().__init__(path=self.BASE_DIR)
@@ -76,45 +82,56 @@ class Updater(Repo):
         self.kill_application()
         self.run_application()
 
-    def update(self, **kwargs: Any) -> None:
+    def update(self, **kwargs: Any) -> IterableList[FetchInfo]:
         """ Doing hard reset and pull
         :param kwargs:
-            Additional arguments to be passed to git-pull"""
+            Additional arguments to be passed to git-pull
+        :return: Please see 'fetch' method"""
 
         self.git.reset('--hard')
         try:
-            self.git.pull(self.url, **kwargs)
-        except GitCommandError as error:
-            self.__check_error(error)
+            return self.git.pull(self.url, **kwargs)
+        except GitCommandError:
+            self._delete_files()
+            return self.git.pull(self.url, **kwargs)
 
     def check_update(self) -> bool:
         """Check new updates
-
         :return:
             If True is returned, there is an update.
-            If it returns False, there is no update.
-        """
+            If it returns False, there is no update."""
+
         try:
             local_last_commit = self.commit().hexsha
-        except ValueError as error:
-            return self.__check_error(error)
+        except ValueError:
+            return True
 
         remote = self.remotes[0]
         remote_last_commit = remote.fetch()[0].commit.hexsha
         return remote_last_commit != local_last_commit
 
-    def install_requirements(self) -> None:
-        """ Install requirements.txt """
+    def install_requirements(self) -> Union[None, 'subprocess.CompletedProcess']:
+        """ Install requirements.txt
+        :return: None if not exist file requirements.txt or if exit 'subprocess.CompletedProcess'"""
         if not os.path.exists(self.path_to_requirements_file):
             return
-        subprocess.run(self._get_command_in_venv(self.command_install_requirements), shell=True)
+        return subprocess.run(self._get_command_in_venv(self.command_install_requirements), shell=True)
 
-    def kill_application(self) -> None:
-        """ Kill application """
-        subprocess.run(self.command_kill_app, shell=True)
+    def kill_application(self, custom_command_kill_app: Optional[str] = None) -> 'subprocess.CompletedProcess':
+        """Kill application
+        :param custom_command_kill_app:
+            Your custom application termination command. Initially -> 'nohup app_name.py &'
+        :return: 'subprocess.CompletedProcess'"""
+        if custom_command_kill_app:
+            self.command_kill_app = custom_command_kill_app
+        return subprocess.run(self.command_kill_app, shell=True)
 
-    def run_application(self) -> None:
-        """ Run application """
+    def run_application(self, custom_command_run_app: Optional[str] = None) -> None:
+        """Run application
+        :param custom_command_run_app:
+            Your custom application launch command. Initially -> 'pkill -f app_name.py'"""
+        if custom_command_run_app:
+            self.command_run_app = custom_command_run_app
         subprocess.call(self._get_command_in_venv(self.command_run_app), shell=True)
 
     def _get_command_in_venv(self, command: str) -> str:
@@ -127,7 +144,8 @@ class Updater(Repo):
         return ';'.join([self.command_activate_venv, command])
 
     def add_updater_in_gitignore(self) -> None:
-        """ Reading in 'a+' may not work adequately, which is why I used two context managers """
+        """Add __ updater__ in .gitignore file.
+        Reading through 'a+' may not work adequately, so I used two context managers """
         gitignore_path = self.BASE_DIR.joinpath('.gitignore')
         dir_name = Path(__file__).resolve().parent.name
 
@@ -138,35 +156,14 @@ class Updater(Repo):
         with open(gitignore_path, 'a') as gitignore_file:
             gitignore_file.write(f'\n{dir_name}/')
 
-    def _delete_files(self):
+    def _delete_files(self) -> None:
         """ Delete all file in root dir """
         all_files = self.BASE_DIR.iterdir()
         for file in all_files:
             if file.name in self.DESIRED_DIRECTORIES:
                 continue
-            if Path.is_dir(file):
-                shutil.rmtree(file)
-                continue
-            Path.unlink(file)
+            shutil.rmtree(file) if Path.is_dir(file) else Path.unlink(file)
 
     def _delete_git(self) -> None:
         """Deleting a git dir"""
-        path_to_git = self.BASE_DIR.joinpath('.git')
-        if Path.exists(path_to_git):
-            shutil.rmtree(path_to_git)
-
-    def __check_error(self, error: Exception) -> Union[bool, None]:
-        """ Checking whether the error is safe, if so handling it, if not causing it
-        :param error:
-            Exception to check
-        :raise error:
-        :return: Bool or None"""
-
-        string_error = str(error)
-        if "Reference at 'refs/heads/master' does not exist" in string_error:
-            return True
-        if 'Please move or remove them before you merge.' in string_error:
-            self._delete_files()
-            self.update()
-            return
-        raise error
+        shutil.rmtree(self.PATH_TO_GIT) if Path.exists(self.PATH_TO_GIT) else None
