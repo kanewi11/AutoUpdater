@@ -87,7 +87,7 @@ class Updater(Repo):
             return self.git.pull(self.url, **kwargs)
         except GitCommandError:
             self._delete_files()
-            return self.git.pull(self.url, **kwargs)
+        return self.git.pull(self.url, **kwargs)
 
     def check_update(self) -> bool:
         """Check new updates
