@@ -1,18 +1,21 @@
 # Automatically update the application using GitHub. 
 
+If you are interested in this project, I will be your pull requests.
+
 ## This project can: 
 * Track new commits
 * Update with pull
-* Set requirements.txt 
-* Restart the application
+* Install `requirements.txt`
+* Automatically run your application after you run `__updater__/main.py`
+* **Automatically restart your application after an update**
 
 Once started, `__updater__/main.py` will automatically create a git repository and make a pull from the one specified in the settings.
 
 ## Run the update program.
 
-Before each update, all your local changes will be overwritten, 
+**Before each update, all your local changes will be overwritten, 
 so think ahead and make sure that all the parameters 
-that need to be changed in production are put in the environment variables.
+that need to be changed in production are put in the environment variables.**
 
 1. Create an empty directory
 2. Clone the repository `git clone https://github.com/kanewi11/AutoUpdater.git ./`
