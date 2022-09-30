@@ -158,4 +158,4 @@ class Updater(Repo):
 
     def _delete_git(self) -> None:
         """Deleting a git dir"""
-        shutil.rmtree(self.PATH_TO_GIT) if Path.exists(self.PATH_TO_GIT) else None
+        Path.exists(self.PATH_TO_GIT) and shutil.rmtree(self.PATH_TO_GIT)
