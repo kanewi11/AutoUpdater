@@ -122,17 +122,15 @@ class Updater(Repo):
         :param custom_command_kill_app:
             Your custom application termination command. Initially -> 'nohup app_name.py &'
         :return: 'subprocess.CompletedProcess'"""
-        if custom_command_kill_app:
-            self.command_kill_app = custom_command_kill_app
-        return subprocess.run(self.command_kill_app, shell=True)
+        command_kill_app = custom_command_kill_app or self.command_kill_app
+        return subprocess.run(command_kill_app, shell=True)
 
     def run_application(self, custom_command_run_app: Optional[str] = None) -> None:
         """Run application
         :param custom_command_run_app:
             Your custom application launch command. Initially -> 'pkill -f app_name.py'"""
-        if custom_command_run_app:
-            self.command_run_app = custom_command_run_app
-        subprocess.call(self._get_command_in_venv(self.command_run_app), shell=True)
+        command_run_app = custom_command_run_app or self.command_run_app
+        subprocess.call(self._get_command_in_venv(command_run_app), shell=True)
 
     def _get_command_in_venv(self, command: str) -> str:
         """ Returns the command to be executed in the virtual environment
@@ -141,7 +139,7 @@ class Updater(Repo):
         :return:
             The command with the execution of the virtual environment
             activation and the command that was passed to this method"""
-        return ';'.join([self.command_activate_venv, command])
+        return f'{self.command_activate_venv};{command}'
 
     def add_updater_in_gitignore(self) -> None:
         """Add __ updater__ in .gitignore file.
