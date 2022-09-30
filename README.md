@@ -10,6 +10,10 @@ Once started, `__updater__/main.py` will automatically create a git repository a
 
 ## Run the update program.
 
+Before each update, all your local changes will be overwritten, 
+so think ahead and make sure that all the parameters 
+that need to be changed in production are put in the environment variables.
+
 1. Create an empty directory
 2. Clone the repository first `git clone https://github.com/kanewi11/AutoUpdater.git ./`
 3. Creating a virtual environment `python3 -m venv venv`
@@ -20,7 +24,7 @@ Once started, `__updater__/main.py` will automatically create a git repository a
 `'dir/run.py'`
 8. `ENVIRONMENT_NAME = 'venv'` The name of the virtual environment
 9. `OWNER = 'kanewi11'` The owner of the GitHub repository
-10. `REPOSITORY_NAME = 'AutoUpdater'` Name of the repository from which the update will be performed
+10. `REPOSITORY_NAME = 'Diploma'` Name of the repository from which the update will be performed
 11. `UPDATE_DELAY = 120` Delay in seconds between GitHub checks for the repository
 12. `PIP = 'pip'` If you run pip, for example, with pip3, enter `'pip3'` here
 13. `PYTHON = 'python'` If you are running python, for example, using the python3 command, enter `'python3'` here
