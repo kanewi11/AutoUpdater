@@ -2,7 +2,7 @@ import os.path
 import shutil
 import subprocess
 from pathlib import Path
-from typing import Any, Union, Optional
+from typing import Any, Union, Optional, List
 
 from git import Repo, FetchInfo
 from git.util import IterableList
@@ -24,9 +24,9 @@ class Updater(Repo):
     so think ahead and make sure that all the parameters
     that need to be changed in production are put in the environment variables."""
 
-    BASE_DIR = Path(__file__).resolve().parent.parent
-    DESIRED_DIRECTORIES = [Path(__file__).resolve().parent.name, '.git']
-    PATH_TO_GIT = BASE_DIR.joinpath('.git')
+    BASE_DIR: 'Path' = Path(__file__).resolve().parent.parent
+    DESIRED_DIRECTORIES: List[str] = [Path(__file__).resolve().parent.name, '.git']
+    PATH_TO_GIT: 'Path' = BASE_DIR.joinpath('.git')
 
     def __init__(self, owner: str, repository_name: str, app_name: str, environment_name: str = 'venv',
                  branch_name: str = 'main', pip: str = 'pip',  python: str = 'python', **kwargs: Any) -> None:
@@ -69,12 +69,13 @@ class Updater(Repo):
         self.command_run_app = f'nohup {python} {self.path_to_app} &'
         self.command_kill_app = f'pkill -f {app_name}'
         self.DESIRED_DIRECTORIES.append(environment_name)
+        self.branch_name = branch_name
 
         if not self.remotes:
             self.create_remote(branch_name, self.url)
 
-        self.kill_application()
-        self.run_application()
+        self.kill_app()
+        self.run_app()
 
     def update(self, **kwargs: Any) -> IterableList[FetchInfo]:
         """ Doing hard reset and pull
@@ -86,8 +87,7 @@ class Updater(Repo):
         try:
             return self.git.pull(self.url, **kwargs)
         except GitCommandError:
-            self._delete_files()
-        return self.git.pull(self.url, **kwargs)
+            self._update_in_clear_dir(**kwargs)
 
     def check_update(self) -> bool:
         """Check new updates
@@ -100,7 +100,7 @@ class Updater(Repo):
         except ValueError:
             return True
 
-        remote = self.remotes[0]
+        remote = self.remote(self.branch_name)
         remote_last_commit = remote.fetch()[0].commit.hexsha
         return remote_last_commit != local_last_commit
 
@@ -111,20 +111,31 @@ class Updater(Repo):
             return
         return subprocess.run(self._get_command_in_venv(self.command_install_requirements), shell=True)
 
-    def kill_application(self, custom_command_kill_app: Optional[str] = None) -> 'subprocess.CompletedProcess':
+    def kill_app(self, custom_command_kill_app: Optional[str] = None) -> 'subprocess.CompletedProcess':
         """Kill application
         :param custom_command_kill_app:
-            Your custom application termination command. Initially -> 'nohup app_name.py &'
+            Your custom application launch command. Initially -> 'pkill -f app_name.py'
         :return: 'subprocess.CompletedProcess'"""
         command_kill_app = custom_command_kill_app or self.command_kill_app
         return subprocess.run(command_kill_app, shell=True)
 
-    def run_application(self, custom_command_run_app: Optional[str] = None) -> None:
+    def run_app(self, custom_command_run_app: Optional[str] = None) -> None:
         """Run application
         :param custom_command_run_app:
-            Your custom application launch command. Initially -> 'pkill -f app_name.py'"""
+            Your custom application termination command. Initially -> 'nohup app_name.py &'"""
         command_run_app = custom_command_run_app or self.command_run_app
         subprocess.call(self._get_command_in_venv(command_run_app), shell=True)
+
+    def _update_in_clear_dir(self, **kwargs: Any) -> IterableList[FetchInfo]:
+        """
+        This function is designed to re-pull if the first time you get an error that the files are in the way.
+        Clean up the directory and repeat the pull.
+        If the error is gone, cool, if not, we don't handle it like in the first case and the error pops up
+        :param kwargs:
+            Additional arguments to be passed to git-pull
+        :return: Please see 'fetch' method"""
+        self._delete_files_or_dirs()
+        return self.git.pull(self.url, **kwargs)
 
     def _get_command_in_venv(self, command: str) -> str:
         """ Returns the command to be executed in the virtual environment
@@ -142,14 +153,14 @@ class Updater(Repo):
         dir_name = Path(__file__).resolve().parent.name
 
         with open(gitignore_path, 'r') as gitignore_file:
-            if f'{dir_name}/' in gitignore_file.read():
+            if f'{dir_name}/' in gitignore_file:
                 return
 
         with open(gitignore_path, 'a') as gitignore_file:
             gitignore_file.write(f'\n{dir_name}/')
 
-    def _delete_files(self) -> None:
-        """ Delete all file in root dir """
+    def _delete_files_or_dirs(self) -> None:
+        """ Delete all file or dirs in root dir """
         all_files = self.BASE_DIR.iterdir()
         for file in all_files:
             if file.name in self.DESIRED_DIRECTORIES:

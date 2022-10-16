@@ -25,10 +25,32 @@ that need to be changed in production are put in the environment variables.**
 6. Then navigate to the file ➡️ `__updater__/settings.py`
 7. `APP = 'test.py'` This is the file to run your script, change its name. If the file to run is in some folder, write **relative path to the script**, e.g:
 `'dir/run.py'`
-8. `ENVIRONMENT_NAME = 'venv'` The name of the virtual environment
-9. `OWNER = 'kanewi11'` The owner of the GitHub repository
-10. `REPOSITORY_NAME = 'Diploma'` Name of the repository from which the update will be performed
-11. `UPDATE_DELAY = 120` Delay in seconds between GitHub checks for the repository
-12. `PIP = 'pip'` If you run pip, for example, with pip3, enter `'pip3'` here
-13. `PYTHON = 'python'` If you are running python, for example, using the python3 command, enter `'python3'` here
-14. Run `__updater__/main.py`
+8. `ENVIRONMENT_NAME = 'venv'` The name of the virtual environment.
+9. `OWNER = 'kanewi11'` The owner of the GitHub repository.
+10. `REPOSITORY_NAME = 'Diploma'` Name of the repository from which the update will be performed.
+11. `UPDATE_DELAY = 120` Delay in seconds between GitHub checks for the repository.
+12. `PIP = 'pip'` If you run pip, for example, with pip3, enter `'pip3'` here.
+13. `PYTHON = 'python'` If you are running python, for example, using the python3 command, enter `'python3'` here.
+14. You should have this hierarchy before launching:
+```
+dir_name
+│   README.md
+│   .gitignore
+│   requirements.txt
+│
+└───venv
+│   │   ...
+│   
+└───__updater__
+│   │   __init__.py
+│   │   main.py
+│   │   settings.py
+│   │   updater.py
+│   
+└───.git
+    │   ...
+```
+15. Run `__updater__/main.py`. 
+After launching, a pull will be made to the main directory from the repository GitHub 
+(_which you specified in the settings_). All unnecessary files will be removed. 
+Before each update all changes in your files will be erased, be aware of that.

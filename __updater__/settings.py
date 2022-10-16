@@ -1,8 +1,3 @@
-from pathlib import Path
-
-
-BASE_DIR = Path(__file__).resolve().parent.parent
-
 APP = 'main.py'  # File for start your app
 ENVIRONMENT_NAME = 'venv'
 

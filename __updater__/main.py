@@ -2,7 +2,6 @@ import logging
 import traceback
 from time import sleep
 
-
 from __updater__.settings import (
     OWNER,
     REPOSITORY_NAME,
@@ -13,7 +12,6 @@ from __updater__.settings import (
     PYTHON,
     UPDATE_DELAY
 )
-
 from __updater__.updater import Updater
 
 
@@ -32,11 +30,11 @@ def main():
         sleep(UPDATE_DELAY)
         return
 
-    updater.kill_application()
+    updater.kill_app()
     updater.update()
     updater.add_updater_in_gitignore()
     updater.install_requirements()
-    updater.run_application()
+    updater.run_app()
 
 
 if __name__ == '__main__':
