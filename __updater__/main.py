@@ -15,7 +15,7 @@ from __updater__.settings import (
 from __updater__.updater import Updater
 
 
-logging.basicConfig(level=logging.INFO, filename="logs.log", format="%(asctime)s %(levelname)s %(message)s")
+logging.basicConfig(level=logging.INFO, filename='logs.log', format='%(asctime)s %(levelname)s %(message)s')
 logging.info('Starting updater.')
 
 updater = Updater(owner=OWNER, repository_name=REPOSITORY_NAME, app_name=APP, environment_name=ENVIRONMENT_NAME,

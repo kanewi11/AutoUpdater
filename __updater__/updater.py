@@ -92,8 +92,7 @@ class Updater(Repo):
     def check_update(self) -> bool:
         """Check new updates
         :return:
-            If True is returned, there is an update.
-            If it returns False, there is no update."""
+            If True is returned, there is an update."""
 
         try:
             local_last_commit = self.commit().hexsha
