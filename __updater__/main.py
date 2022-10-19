@@ -1,3 +1,4 @@
+""" Example of a function to check for an update and install that update, if there is one. """
 import logging
 import traceback
 from time import sleep
@@ -8,9 +9,7 @@ from __updater__.settings import (
     APP,
     ENVIRONMENT_NAME,
     REMOTE_BRANCH_NAME,
-    PIP,
-    PYTHON,
-    UPDATE_DELAY
+    UPDATE_CHECK_DELAY
 )
 from __updater__.updater import Updater
 
@@ -18,16 +17,17 @@ from __updater__.updater import Updater
 logging.basicConfig(level=logging.INFO, filename='logs.log', format='%(asctime)s %(levelname)s %(message)s')
 logging.info('Starting updater.')
 
-updater = Updater(owner=OWNER, repository_name=REPOSITORY_NAME, app_name=APP, environment_name=ENVIRONMENT_NAME,
-                  branch_name=REMOTE_BRANCH_NAME, pip=PIP, python=PYTHON)
+updater = Updater(owner=OWNER,
+                  repository_name=REPOSITORY_NAME,
+                  app_name=APP,
+                  environment_name=ENVIRONMENT_NAME,
+                  branch_name=REMOTE_BRANCH_NAME)
 
 
-def main():
-    """ Example of a function to check for an update and install that update, if there is one. """
-
-    update = updater.check_update()
-    if not update:
-        sleep(UPDATE_DELAY)
+def update():
+    is_update = updater.check_update()
+    if not is_update:
+        sleep(UPDATE_CHECK_DELAY)
         return
 
     updater.kill_app()
@@ -37,10 +37,15 @@ def main():
     updater.run_app()
 
 
+def main():
+    try:
+        update()
+    except Exception as error:
+        logging.error(traceback.format_exc())
+        ...
+        raise error
+
+
 if __name__ == '__main__':
     while True:
-        try:
-            main()
-        except Exception as error:
-            logging.error(traceback.format_exc())
-            break
+        main()

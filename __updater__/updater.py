@@ -27,24 +27,23 @@ class Updater(Repo):
     BASE_DIR: 'Path' = Path(__file__).resolve().parent.parent
     DESIRED_DIRECTORIES: List[str] = [Path(__file__).resolve().parent.name, '.git']
     PATH_TO_GIT: 'Path' = BASE_DIR.joinpath('.git')
+    PIP: str = 'pip'
+    PYTHON: str = 'python'
 
     def __init__(self, owner: str, repository_name: str, app_name: str, environment_name: str = 'venv',
-                 branch_name: str = 'main', pip: str = 'pip',  python: str = 'python', **kwargs: Any) -> None:
-        """Create a new Updater instance
+                 branch_name: str = 'main', **kwargs: Any) -> None:
+        """Create a new Updater instance.
+
         :param owner:
-            GitHub repository owner. Example: https://github.com/{kanewi11}/AutoUpdater
+            GitHub repository owner - https://github.com/{kanewi11}/AutoUpdater.
         :param repository_name:
-            GitHub repository name. Example: https://github.com/kanewi11/{AutoUpdater}
+            GitHub repository name - https://github.com/kanewi11/{AutoUpdater}.
         :param app_name:
-            The name of the file to run your application
+            The name of the file to run your application.
         :param environment_name:
-            Name of your virtual environment
+            Name of your virtual environment.
         :param branch_name:
-            The master GitHub branch
-        :param pip:
-            pip command
-        :param python:
-            python command
+            The master GitHub branch.
         :param kwargs:
             Keyword arguments serving as additional options to the git-init command"""
 
@@ -64,9 +63,9 @@ class Updater(Repo):
         self.path_to_venv_activate = self.BASE_DIR.joinpath(f'{environment_name}/bin/activate')
         self.command_activate_venv = f'source {self.path_to_venv_activate}'
         self.path_to_requirements_file = self.BASE_DIR.joinpath('requirements.txt')
-        self.command_install_requirements = f'{pip} install -r {self.path_to_requirements_file}'
+        self.command_install_requirements = f'{self.PIP} install -r {self.path_to_requirements_file}'
         self.path_to_app = self.BASE_DIR.joinpath(app_name)
-        self.command_run_app = f'nohup {python} {self.path_to_app} &'
+        self.command_run_app = f'nohup {self.PYTHON} {self.path_to_app} &'
         self.command_kill_app = f'pkill -f {app_name}'
         self.DESIRED_DIRECTORIES.append(environment_name)
         self.branch_name = branch_name
@@ -78,22 +77,23 @@ class Updater(Repo):
         self.run_app()
 
     def update(self, **kwargs: Any) -> IterableList[FetchInfo]:
-        """ Doing hard reset and pull
+        """Doing hard reset and pull
+
         :param kwargs:
-            Additional arguments to be passed to git-pull
-        :return: Please see 'fetch' method"""
+            Additional arguments to be passed to git-pull.
+        :return: Please see 'fetch' method."""
 
         self.git.reset('--hard')
         try:
             return self.git.pull(self.url, **kwargs)
         except GitCommandError:
-            self._update_in_clear_dir(**kwargs)
+            return self._update_in_clear_dir(**kwargs)
 
     def check_update(self) -> bool:
-        """Check new updates
+        """Check new commits
+
         :return:
             If True is returned, there is an update."""
-
         try:
             local_last_commit = self.commit().hexsha
         except ValueError:
@@ -105,10 +105,10 @@ class Updater(Repo):
 
     def install_requirements(self) -> Union[None, 'subprocess.CompletedProcess']:
         """ Install requirements.txt
+
         :return: None if not exist file requirements.txt or if exit 'subprocess.CompletedProcess'"""
-        if not os.path.exists(self.path_to_requirements_file):
-            return
-        return subprocess.run(self._get_command_in_venv(self.command_install_requirements), shell=True)
+        if os.path.exists(self.path_to_requirements_file):
+            return subprocess.run(self._get_command_in_venv(self.command_install_requirements), shell=True)
 
     def kill_app(self, custom_command_kill_app: Optional[str] = None) -> 'subprocess.CompletedProcess':
         """Kill application
@@ -124,6 +124,19 @@ class Updater(Repo):
             Your custom application termination command. Initially -> 'nohup app_name.py &'"""
         command_run_app = custom_command_run_app or self.command_run_app
         subprocess.call(self._get_command_in_venv(command_run_app), shell=True)
+
+    def add_updater_in_gitignore(self) -> None:
+        """Add __updater__ in .gitignore file"""
+        gitignore_path = self.BASE_DIR.joinpath('.gitignore')
+        dir_name = Path(__file__).resolve().parent.name
+
+        # Reading through 'a+' may not work adequately, so I used two context managers
+        with open(gitignore_path, 'r') as gitignore_file:
+            if f'{dir_name}/' in gitignore_file:
+                return
+
+        with open(gitignore_path, 'a') as gitignore_file:
+            gitignore_file.write(f'\n{dir_name}/')
 
     def _update_in_clear_dir(self, **kwargs: Any) -> IterableList[FetchInfo]:
         """
@@ -145,21 +158,8 @@ class Updater(Repo):
             activation and the command that was passed to this method"""
         return f'{self.command_activate_venv};{command}'
 
-    def add_updater_in_gitignore(self) -> None:
-        """Add __ updater__ in .gitignore file.
-        Reading through 'a+' may not work adequately, so I used two context managers """
-        gitignore_path = self.BASE_DIR.joinpath('.gitignore')
-        dir_name = Path(__file__).resolve().parent.name
-
-        with open(gitignore_path, 'r') as gitignore_file:
-            if f'{dir_name}/' in gitignore_file:
-                return
-
-        with open(gitignore_path, 'a') as gitignore_file:
-            gitignore_file.write(f'\n{dir_name}/')
-
     def _delete_files_or_dirs(self) -> None:
-        """ Delete all file or dirs in root dir """
+        """Delete all file or dirs in root dir"""
         all_files = self.BASE_DIR.iterdir()
         for file in all_files:
             if file.name in self.DESIRED_DIRECTORIES:
