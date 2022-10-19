@@ -1,6 +1,15 @@
-# Automatically update the application using GitHub. 
 
-If you are interested in this project, I will be your pull requests.
+<div align="center">
+    <h1>Automatically update the project from a remote GitHub repository.</h1>
+    <a href="https://github.com/kanewi11/AutoUpdater">
+        <img src="https://i.gifer.com/origin/e0/e0136905741e0abf318a3bb939a40bdc.gif">
+    </a>
+</div>
+
+This project tracks new commits in your remote GitHub repository. 
+If there is a new commit, the script terminates your application, does a pull, install requirements.txt and restarts the application 🔥
+
+You can fully work out the upgrade methodology in the `__updater__/main.py` file.
 
 ## This project can: 
 * Track new commits
@@ -29,28 +38,27 @@ that need to be changed in production are put in the environment variables.**
 9. `OWNER = 'kanewi11'` The owner of the GitHub repository.
 10. `REPOSITORY_NAME = 'Diploma'` Name of the repository from which the update will be performed.
 11. `UPDATE_DELAY = 120` Delay in seconds between GitHub checks for the repository.
-12. `PIP = 'pip'` If you run pip, for example, with pip3, enter `'pip3'` here.
-13. `PYTHON = 'python'` If you are running python, for example, using the python3 command, enter `'python3'` here.
-14. You should have this hierarchy before launching:
-```
-dir_name
-│   README.md
-│   .gitignore
-│   requirements.txt
-│
-└───venv
-│   │   ...
-│   
-└───__updater__
-│   │   __init__.py
-│   │   main.py
-│   │   settings.py
-│   │   updater.py
-│   
-└───.git
-    │   ...
-```
-15. Run `__updater__/main.py`. 
+12. You should have this hierarchy before launching:
+    ```
+    dir_name
+    │   README.md
+    │   .gitignore
+    │   requirements.txt
+    │
+    └───venv
+    │   │   ...
+    │   
+    └───__updater__
+    │   │   __init__.py
+    │   │   main.py
+    │   │   settings.py
+    │   │   updater.py
+    │   
+    └───.git
+        │   ...
+    ```
+13. Run `__updater__/main.py`. 
+
 After launching, a pull will be made to the main directory from the repository GitHub 
 (_which you specified in the settings_). All unnecessary files will be removed. 
 Before each update all changes in your files will be erased, be aware of that.
